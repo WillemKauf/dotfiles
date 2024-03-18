@@ -1,0 +1,65 @@
+;; MELPA
+(require 'package)
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+(package-initialize)
+
+;; PACKAGES
+(require 'use-package)
+(require 'lsp-mode)
+(require 'modern-cpp-font-lock)
+(require 'doom-modeline)
+(require 'rainbow-delimiters)
+(require 'whitespace)
+(require 'all-the-icons)
+(require 'yasnippet)
+
+;; SETQ
+(setq column-number-mode t)
+(setq make-backup-files nil)
+(setq confirm-kill-emacs #'y-or-n-p)
+(setq visible-bell t)
+(setq inhibit-startup-screen t)
+(setq lsp-diagnostics-provider :none)
+(setq lsp-modeline-diagnostics-enable nil)
+
+;; C++
+(modern-c++-font-lock-global-mode t)
+
+;; HOOKS
+(add-hook 'c++-mode-hook 'rainbow-delimiters-mode)
+(add-hook 'prog-mode-hook 'rainbow-delimiters-mode)
+(add-hook 'dired-mode-hook 'all-the-icons-dired-mode)
+(add-hook 'c++-mode-hook #'lsp)
+
+;; FONT
+(set-face-attribute 'default nil
+		    :family "OfficeCodePro"
+		    :height 100
+		    :weight 'Semi-bold
+		    :width 'normal)
+
+
+;; EMACS DEFAULTS
+(tool-bar-mode -1)
+(menu-bar-mode -1)
+(scroll-bar-mode -1)
+(global-whitespace-mode -1)
+(electric-indent-mode -1)
+(global-display-line-numbers-mode t)
+(yas-global-mode 1)
+
+;; EXTRA KEYBINDS
+(global-set-key "\C-g" 'goto-line)
+(global-set-key "\C-z" (lambda () (interactive) (other-window -1)))
+(global-set-key "\C-o" (lambda () (interactive) (other-window 1)))
+(global-set-key "\C-q" (lambda () (interactive) (other-window 1)))
+
+;; DOOM THEME
+(use-package doom-themes
+  :ensure t
+  :config
+  ;; Global settings (defaults)
+  (setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
+        doom-themes-enable-italic t) ; if nil, italics is universally disabled
+  (load-theme 'doom-one t))
+(doom-modeline-mode 1)
