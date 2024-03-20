@@ -53,6 +53,10 @@
 (global-set-key "\C-z" (lambda () (interactive) (other-window -1)))
 (global-set-key "\C-o" (lambda () (interactive) (other-window 1)))
 (global-set-key "\C-q" (lambda () (interactive) (other-window 1)))
+(global-set-key "\M-r" 'lsp-find-references)
+(global-set-key "\M-q" 'lsp-find-definition)
+(global-set-key "\M-p" 'clang-format-buffer)
+
 
 ;; DOOM THEME
 (use-package doom-themes
