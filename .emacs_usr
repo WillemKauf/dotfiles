@@ -21,15 +21,22 @@
 (setq inhibit-startup-screen t)
 (setq lsp-diagnostics-provider :none)
 (setq lsp-modeline-diagnostics-enable nil)
+(setq company-minimum-prefix-length 1)
 
 ;; C++
 (modern-c++-font-lock-global-mode t)
 
 ;; HOOKS
 (add-hook 'c++-mode-hook 'rainbow-delimiters-mode)
-(add-hook 'prog-mode-hook 'rainbow-delimiters-mode)
-(add-hook 'dired-mode-hook 'all-the-icons-dired-mode)
+(add-hook 'c++-mode-hook 'highlight-numbers-mode)
 (add-hook 'c++-mode-hook #'lsp)
+
+(add-hook 'prog-mode-hook 'rainbow-delimiters-mode)
+(add-hook 'prog-mode-hook 'highlight-numbers-mode)
+
+(add-hook 'dired-mode-hook 'all-the-icons-dired-mode)
+
+(add-hook 'c++-mode-hook 'global-company-mode)
 
 ;; FONT
 (set-face-attribute 'default nil
