@@ -1,7 +1,13 @@
+;; LSP RELATED ENV VARIABLES
+(setenv "LSP_USE_PLISTS" "true")
+(setenv "TMPDIR" "/home/willem/.tmp/")
+
+
 ;; MELPA
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (package-initialize)
+
 
 ;; PACKAGES
 (require 'use-package)
@@ -12,6 +18,8 @@
 (require 'whitespace)
 (require 'all-the-icons)
 (require 'yasnippet)
+(require 'bind-key)
+
 
 ;; SETQ
 (setq column-number-mode t)
@@ -21,22 +29,33 @@
 (setq inhibit-startup-screen t)
 (setq lsp-diagnostics-provider :none)
 (setq lsp-modeline-diagnostics-enable nil)
+(setq lsp-clients-clangd-args '("--j=10"))
 (setq company-minimum-prefix-length 1)
+(setq-default show-trailing-whitespace t)
+(setq lsp-headerline-breadcrumb-enable nil)
+(setq lsp-ui-doc-enable t)
+(setq lsp-ui-doc-show-with-cursor t)
+(setq lsp-ui-doc-delay 0.75)
+
 
 ;; C++
 (modern-c++-font-lock-global-mode t)
+(add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
+
 
 ;; HOOKS
 (add-hook 'c++-mode-hook 'rainbow-delimiters-mode)
 (add-hook 'c++-mode-hook 'highlight-numbers-mode)
 (add-hook 'c++-mode-hook #'lsp)
+(add-hook 'c++-mode-hook 'global-company-mode)
+
+(add-hook 'python-mode-hook #'lsp)
 
 (add-hook 'prog-mode-hook 'rainbow-delimiters-mode)
 (add-hook 'prog-mode-hook 'highlight-numbers-mode)
 
 (add-hook 'dired-mode-hook 'all-the-icons-dired-mode)
 
-(add-hook 'c++-mode-hook 'global-company-mode)
 
 ;; FONT
 (set-face-attribute 'default nil
@@ -46,7 +65,7 @@
 		    :width 'normal)
 
 
-;; EMACS DEFAULTS
+;; EMACS MODES
 (tool-bar-mode -1)
 (menu-bar-mode -1)
 (scroll-bar-mode -1)
@@ -54,15 +73,24 @@
 (electric-indent-mode -1)
 (global-display-line-numbers-mode t)
 (yas-global-mode 1)
+(which-function-mode 1)
+
 
 ;; EXTRA KEYBINDS
+;; If I use bind-key* on \C-g I lose ability to quit a command.
 (global-set-key "\C-g" 'goto-line)
-(global-set-key "\C-z" (lambda () (interactive) (other-window -1)))
-(global-set-key "\C-o" (lambda () (interactive) (other-window 1)))
-(global-set-key "\C-q" (lambda () (interactive) (other-window 1)))
-(global-set-key "\M-r" 'lsp-find-references)
-(global-set-key "\M-q" 'lsp-find-definition)
-(global-set-key "\M-p" 'clang-format-buffer)
+
+(bind-key* "C-z" (lambda () (interactive) (other-window -1)))
+(bind-key* "C-o" (lambda () (interactive) (other-window 1)))
+(bind-key* "C-q" (lambda () (interactive) (other-window 1)))
+(bind-key* "M-q" 'lsp-find-definition)
+(bind-key* "M-r" 'lsp-find-references)
+(bind-key* "M-p" 'clang-format-buffer)
+(bind-key* "\C-x 4" 'make-frame)
+(bind-key* "\C-x \C-c" 'delete-frame)
+(bind-key* "\C-x \C-v" 'save-buffers-kill-emacs)
+(bind-key* "C-M-q" 'lsp-treemacs-symbols)
+(bind-key* "C-M-r" 'lsp-ui-peek-find-references)
 
 
 ;; DOOM THEME
@@ -74,3 +102,34 @@
         doom-themes-enable-italic t) ; if nil, italics is universally disabled
   (load-theme 'doom-one t))
 (doom-modeline-mode 1)
+
+
+;; EMACS-LSP-BOOSTER
+(defun lsp-booster--advice-json-parse (old-fn &rest args)
+  "Try to parse bytecode instead of json."
+  (or
+   (when (equal (following-char) ?#)
+     (let ((bytecode (read (current-buffer))))
+       (when (byte-code-function-p bytecode)
+         (funcall bytecode))))
+   (apply old-fn args)))
+(advice-add (if (progn (require 'json)
+                       (fboundp 'json-parse-buffer))
+                'json-parse-buffer
+              'json-read)
+            :around
+            #'lsp-booster--advice-json-parse)
+
+(defun lsp-booster--advice-final-command (old-fn cmd &optional test?)
+  "Prepend emacs-lsp-booster command to lsp CMD."
+  (let ((orig-result (funcall old-fn cmd test?)))
+    (if (and (not test?)                             ;; for check lsp-server-present?
+             (not (file-remote-p default-directory)) ;; see lsp-resolve-final-command, it would add extra shell wrapper
+             lsp-use-plists
+             (not (functionp 'json-rpc-connection))  ;; native json-rpc
+             (executable-find "emacs-lsp-booster"))
+        (progn
+          (message "Using emacs-lsp-booster for %s!" orig-result)
+          (cons "emacs-lsp-booster" orig-result))
+      orig-result)))
+(advice-add 'lsp-resolve-final-command :around #'lsp-booster--advice-final-command)
