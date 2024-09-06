@@ -28,7 +28,8 @@
 (setq column-number-mode t)
 (setq make-backup-files nil)
 (setq confirm-kill-emacs #'y-or-n-p)
-(setq visible-bell t)
+(setq visible-bell nil)
+(setq ring-bell-function 'ignore)
 (setq inhibit-startup-screen t)
 (setq lsp-diagnostics-provider :none)
 (setq lsp-modeline-diagnostics-enable nil)
@@ -43,10 +44,41 @@
 (setq lsp-ui-doc-delay 0.75)
 (setq lsp-enable-imenu nil)
 (setq lsp-clangd-binary-path "/home/willem/redpanda/vbuild/llvm/build/bin/clangd")
+(setq backup-directory-alist
+      '((".*" "/home/willem/.emacs.d/tmp/" t)))
+(setq lock-file-name-transforms
+      '((".*" "/home/willem/.emacs.d/tmp/" t)))
+
+;; DELETE SELECTION MODE (Thanks Helix)
+(delete-selection-mode 1)
+
+(defun highlight-next-word ()
+  (interactive)
+  (unless (use-region-p)   ; Check if the region is active
+    (set-mark (point)))    ; If not, set the mark at the current point
+  (forward-word 1))        ; Move to the end of the next word
+(defun highlight-previous-word ()
+  (interactive)
+  (unless (use-region-p)   ; Check if the region is active
+    (set-mark (point)))    ; If not, set the mark at the current point
+  (backward-word 1))       ; Move to the end of the next word
+
+(bind-key* "M-f" 'highlight-next-word)
+(bind-key* "M-b" 'highlight-previous-word)
 
 ;; C++
 (modern-c++-font-lock-global-mode t)
 (add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
+
+;; GO
+;;(add-hook 'go-mode-hook #'lsp-deferred)
+
+;; Set up before-save hooks to format buffer and add/delete imports.
+;; Make sure you don't have other gofmt/goimports hooks enabled.
+;;(defun lsp-go-install-save-hooks ()
+;;  (add-hook 'before-save-hook #'lsp-format-buffer t t)
+;;  (add-hook 'before-save-hook #'lsp-organize-imports t t))
+;;(add-hook 'go-mode-hook #'lsp-go-install-save-hooks)
 
 
 ;; HOOKS
@@ -65,11 +97,13 @@
 
 
 ;; FONT
-(set-face-attribute 'default nil
-		    :family "OfficeCodePro"
-		    :height 100
-		    :weight 'Semi-bold
-		    :width 'normal)
+(set-frame-font "OfficeCodePro 11" nil t)
+
+		;;(set-face-attribute 'default nil
+;;		    :family "OfficeCodePro"
+;;		    :height 110
+;;		    :weight 'Semi-bold
+;;		    :width 'normal)
 
 
 ;; EMACS MODES
@@ -85,7 +119,7 @@
 
 ;; EXTRA KEYBINDS
 ;; If I use bind-key* on \C-g I lose ability to quit a command.
-(global-set-key "\C-g" 'goto-line)
+(bind-key* "\C-c g" 'goto-line)
 
 (bind-key* "C-z" (lambda () (interactive) (other-window -1)))
 (bind-key* "C-o" (lambda () (interactive) (other-window 1)))
