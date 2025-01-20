@@ -2,13 +2,16 @@
 (setenv "LSP_USE_PLISTS" "true")
 (setenv "TMPDIR" "/home/willem/.tmp/")
 
+
 ;; LSP RELATED TUNINGS FROM lsp-doctor
 (setq gc-cons-threshold 100000000)
 (setq read-process-output-max (* 1024 1024)) ;; 1mb
 
+
 ;; MELPA
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+(add-to-list 'exec-path "/home/willem/gopls_bin")
 (package-initialize)
 
 
@@ -23,6 +26,8 @@
 (require 'yasnippet)
 (require 'bind-key)
 (require 'bm)
+(require 'prettier)
+
 
 ;; SETQ
 (setq column-number-mode t)
@@ -43,11 +48,12 @@
 (setq lsp-ui-doc-show-with-mouse nil)
 (setq lsp-ui-doc-delay 0.75)
 (setq lsp-enable-imenu nil)
-(setq lsp-clangd-binary-path "/home/willem/redpanda/vbuild/llvm/build/bin/clangd")
+(setq lsp-clangd-binary-path "/home/willem/redpanda/vbuild/llvm/e01ae893b3b91670fd341fc11cedf18f374f9b3d/install/bin/clangd")
 (setq backup-directory-alist
       '((".*" "/home/willem/.emacs.d/tmp/" t)))
 (setq lock-file-name-transforms
       '((".*" "/home/willem/.emacs.d/tmp/" t)))
+(setq lsp-gopls-server-path "/home/willem/gopls_bin/gopls")
 
 ;; DELETE SELECTION MODE (Thanks Helix)
 (delete-selection-mode 1)
@@ -56,29 +62,58 @@
   (interactive)
   (unless (use-region-p)   ; Check if the region is active
     (set-mark (point)))    ; If not, set the mark at the current point
-  (forward-word 1))        ; Move to the end of the next word
+  (forward-word 1))
+
 (defun highlight-previous-word ()
   (interactive)
   (unless (use-region-p)   ; Check if the region is active
     (set-mark (point)))    ; If not, set the mark at the current point
-  (backward-word 1))       ; Move to the end of the next word
+  (backward-word 1))
+
+(defun highlight-next-char ()
+  (interactive)
+  (unless (use-region-p)   ; Check if the region is active
+    (set-mark (point)))    ; If not, set the mark at the current point
+  (forward-char 1))
+
+(defun highlight-previous-char ()
+  (interactive)
+  (unless (use-region-p)   ; Check if the region is active
+    (set-mark (point)))    ; If not, set the mark at the current point
+  (backward-char 1))
 
 (bind-key* "M-f" 'highlight-next-word)
 (bind-key* "M-b" 'highlight-previous-word)
+(bind-key* "C-f" 'highlight-next-char)
+(bind-key* "C-b" 'highlight-previous-char)
+
+(defun my/deactivate-mark-then-move (move-func)
+  (when (region-active-p)
+    (deactivate-mark))
+  (funcall move-func))
+
+
+;; BAZEL
+(add-to-list 'load-path "~/.emacs.d/bazel/")
 
 ;; C++
 (modern-c++-font-lock-global-mode t)
 (add-to-list 'auto-mode-alist '("\\.h\\'" . c++-mode))
 
+;; JAVA
+(setenv "NODE_PATH" "/usr/local/lib/node_modules")
+(add-hook 'java-mode-hook #'prettier-mode)
+(add-hook 'java-mode-hook #'lsp)
+
 ;; GO
-;;(add-hook 'go-mode-hook #'lsp-deferred)
+(add-hook 'go-mode-hook #'lsp-deferred)
 
 ;; Set up before-save hooks to format buffer and add/delete imports.
 ;; Make sure you don't have other gofmt/goimports hooks enabled.
-;;(defun lsp-go-install-save-hooks ()
-;;  (add-hook 'before-save-hook #'lsp-format-buffer t t)
-;;  (add-hook 'before-save-hook #'lsp-organize-imports t t))
-;;(add-hook 'go-mode-hook #'lsp-go-install-save-hooks)
+(defun lsp-go-install-save-hooks ()
+  (add-hook 'before-save-hook #'lsp-format-buffer t t)
+  (add-hook 'before-save-hook #'lsp-organize-imports t t))
+(add-hook 'go-mode-hook #'lsp-go-install-save-hooks)
 
 
 ;; HOOKS
@@ -111,11 +146,16 @@
 (menu-bar-mode -1)
 (scroll-bar-mode -1)
 (global-whitespace-mode -1)
-(electric-indent-mode -1)
 (global-display-line-numbers-mode t)
+(electric-indent-mode -1)
 (yas-global-mode 1)
 (which-function-mode 1)
 
+;; WARNING STUFF
+
+(setq warning-minimum-level :error)
+(add-to-list 'warning-suppress-log-types '(unlock-file))
+(add-to-list 'warning-suppress-types '(unlock-file))
 
 ;; EXTRA KEYBINDS
 ;; If I use bind-key* on \C-g I lose ability to quit a command.
